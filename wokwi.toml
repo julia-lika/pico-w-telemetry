@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = ".pio/build/rpipicow/firmware.uf2"
+elf      = ".pio/build/rpipicow/firmware.elf"
