@@ -1,149 +1,149 @@
-# Pico W Telemetry Firmware
+# Pico Telemetry Firmware
 
-Firmware embarcado para **Raspberry Pi Pico W** que lê sensores analógicos e digitais e envia telemetria via HTTP para o backend da [Atividade 1 (backend-queue-rabbitmq)](https://github.com/julia-lika/backend-queue-rabbitmq).
+Firmware embarcado para **Raspberry Pi Pico (RP2040)** que lê sensores analógicos e digitais e imprime os dados via serial USB.
 
 ## Framework / Toolchain
 
-**Arduino Framework** (Caminho 1) — via [PlatformIO](https://platformio.org/) com o core [arduino-pico (earlephilhower)](https://github.com/earlephilhower/arduino-pico).
+**Arduino Framework** via [PlatformIO](https://platformio.org/) com o core [arduino-pico (earlephilhower)](https://github.com/earlephilhower/arduino-pico).
 
-## Sensores integrados
+---
 
-| Sensor | Tipo | Pino | Natureza | Range esperado |
-|---|---|---|---|---|
-| Botão (presença) | Digital | GP15 | `discrete` | 0 (ausente) / 1 (presente) |
-| Potenciômetro (temperatura) | Analógico | GP26 (ADC0) | `analog` | 0.0 — 330.0 °C (escala LM35) |
+## Hardware necessário
 
-### LED indicador
+- Raspberry Pi Pico (RP2040)
+- Potenciômetro (10kΩ recomendado)
+- Botão (push button)
+- Cabo USB (dados, não apenas carga)
+- Protoboard e jumpers
 
-| Componente | Pino | Função |
-|---|---|---|
-| LED verde | GP25 (built-in) | Aceso = Wi-Fi conectado |
+---
 
 ## Diagrama de conexão
 
 ```
-                    Raspberry Pi Pico W
+                    Raspberry Pi Pico
                    ┌──────────────────────┐
                    │                      │
-  [Botão] ────────│ GP15          GP25  │──── [LED status]
-           GND ───│ GND                  │
+  [Botão] ────────│ GP15 (pino 20)       │
+           GND ───│ GND  (pino 18)       │
                    │                      │
-  [Pot] SIG ──────│ GP26 (ADC0)          │
-        VCC ──────│ 3V3(OUT)             │
-        GND ──────│ GND                  │
+  [Pot] WIPER ────│ GP28 / ADC2 (pino 34)│
+        VCC ──────│ 3V3 OUT     (pino 37)│
+        GND ──────│ AGND        (pino 33)│
+                   │                      │
+                   │ GP25 (LED built-in)  │──── [LED indicador]
                    └──────────────────────┘
 ```
 
-O arquivo `diagram.json` contém o circuito para simulação no [Wokwi](https://wokwi.com/).
+### Pinagem do potenciômetro
 
-## Funcionalidades implementadas
+| Pino do pot | Pino físico do Pico | Função |
+|---|---|---|
+| Terminal esquerdo (VCC) | Pino 37 — 3V3 OUT | Alimentação 3.3V |
+| Terminal do meio (wiper) | Pino 34 — GP28 / ADC2 | Sinal analógico |
+| Terminal direito (GND) | Pino 33 — AGND | Terra analógico |
 
-### 1. Leitura de sensor digital (GP15)
-- Botão configurado com `INPUT_PULLUP` (ativo em LOW)
-- **Debouncing** por software (50 ms) para eliminar ruído de bouncing mecânico
-- Envia leitura como `sensor_type: "presence"`, `nature: "discrete"`, `value: 0 ou 1`
+> **Atenção:** O ADC do Pico suporta no máximo **3.3V**. Nunca conecte 5V ao pino de sinal.
 
-### 2. Leitura de sensor analógico (GP26 / ADC0)
-- Resolução de 12 bits (0–4095)
-- Conversão para escala de temperatura (LM35: 10 mV/°C)
-- **Média móvel** com janela de 10 amostras para suavização
-- Envia leitura como `sensor_type: "temperature"`, `nature: "analog"`
+### Pinagem do botão
 
-### 3. Conectividade Wi-Fi
-- Conexão automática no boot com até 20 tentativas
-- **Reconexão automática** — verifica o link a cada 10 s e reconecta se necessário
-- LED built-in indica status da conexão
-- Sincronização de relógio via **NTP** (`pool.ntp.org`) para timestamps ISO 8601
+| Pino do botão | Pino físico do Pico |
+|---|---|
+| Terminal 1 | Pino 20 — GP15 |
+| Terminal 2 | Qualquer GND |
 
-### 4. Envio de telemetria HTTP
-- POST para o endpoint do backend com payload JSON idêntico ao esperado pela Atividade 1
-- **Retry** com backoff linear (até 3 tentativas, delay crescente)
-- Timeout de 5 s por requisição
+O pino usa `INPUT_PULLUP` — lê `LOW` quando pressionado.
 
-### Payload enviado
+---
 
-```json
-{
-  "device_id":   "pico-w-001",
-  "timestamp":   "2026-03-30T14:22:05",
-  "sensor_type": "temperature",
-  "nature":      "analog",
-  "value":       23.45
-}
-```
+## Sensores configurados
 
-## Compilação e gravação
+| Sensor | Pino GPIO | Pino físico | Intervalo |
+|---|---|---|---|
+| Potenciômetro (analógico) | GP28 / ADC2 | 34 | 5 s |
+| Botão (digital) | GP15 | 20 | 2 s |
 
-### Pré-requisitos
-- [PlatformIO CLI](https://docs.platformio.org/en/latest/core/installation.html) ou extensão VS Code
-- Cabo USB conectado ao Pico W
+---
 
-### Configuração
+## Pré-requisitos de software
 
-Edite `include/config.h` com seus dados:
+- Python 3.x instalado
+- PlatformIO CLI:
+  ```bash
+  pip install platformio --break-system-packages
+  ```
 
-```c
-#define WIFI_SSID        "MinhaRede"
-#define WIFI_PASSWORD    "MinhaSenha"
-#define BACKEND_URL      "http://192.168.1.100:3000/telemetry"
-#define DEVICE_ID        "pico-w-001"
-```
+---
 
-### Compilar e gravar
+## Compilar o firmware
 
 ```bash
-# Compilar
-pio run
-
-# Gravar no Pico W (segure BOOTSEL ao conectar USB)
-pio run --target upload
-
-# Monitor serial
-pio device monitor
+cd pico-w-telemetry
+platformio run
 ```
 
-### Simulação com Wokwi
+O firmware compilado fica em `.pio/build/rpipico/firmware.uf2`.
 
-Se não tiver o hardware físico, use o [simulador Wokwi](https://wokwi.com/):
+---
 
-1. Instale a extensão **Wokwi for VS Code**
-2. Compile o projeto com `pio run`
-3. Abra o arquivo `diagram.json` no VS Code
-4. Pressione **F1 → Wokwi: Start Simulator**
+## Gravar no Pico
 
-O arquivo `wokwi.toml` já aponta para o firmware compilado.
+1. **Segure o botão BOOTSEL** no Pico
+2. **Conecte o cabo USB** ao computador enquanto segura
+3. Solte o BOOTSEL — o Pico monta como drive `RPI-RP2`
+4. Copie o firmware:
+   ```bash
+   cp .pio/build/rpipico/firmware.uf2 /media/$USER/RPI-RP2/
+   ```
+5. O Pico reinicia automaticamente e começa a executar
 
-## Saída serial esperada
+> Se aparecer erro de permissão na porta serial, adicione seu usuário ao grupo dialout:
+> ```bash
+> sudo usermod -a -G dialout $USER
+> ```
+> Depois faça logout e login novamente.
+
+---
+
+## Monitorar saída serial
+
+```bash
+platformio device monitor -d ~/projetos/pico-w-telemetry
+```
+
+Saída esperada:
 
 ```
-======= Pico W Telemetry Firmware =======
-[wifi] Connecting to MinhaRede.......
-[wifi] Connected — IP 192.168.1.42
-[ntp] Time sync requested
-[sensor] Temperature (smoothed): 24.31 °C
-[http] Sending: {"device_id":"pico-w-001","timestamp":"2026-03-30T14:22:05","sensor_type":"temperature","nature":"analog","value":24.31}
-[http] 202 Accepted — {"id":"a1b2c3d4-...","status":"queued","message":"Reading received - processing asynchronously"}
-[sensor] Presence: none
-[http] Sending: {"device_id":"pico-w-001","timestamp":"2026-03-30T14:22:07","sensor_type":"presence","nature":"discrete","value":0}
-[http] 202 Accepted — {"id":"e5f6g7h8-...","status":"queued","message":"Reading received - processing asynchronously"}
-[sensor] Temperature (smoothed): 24.28 °C
-[http] Sending: ...
+======= Pico Telemetry (Serial) =======
+[sensor] analog  | raw_value: 110.45
+[sensor] digital | presence: none
+[sensor] analog  | raw_value: 215.30
+[sensor] digital | presence: detected
 ```
+
+- Gire o potenciômetro → `raw_value` muda entre 0 e 330
+- Pressione o botão → alterna entre `detected` e `none`
+
+---
 
 ## Estrutura do projeto
 
 ```
 pico-w-telemetry/
-├── platformio.ini          # Configuração PlatformIO (board, libs)
+├── platformio.ini      # Configuração PlatformIO (board: rpipico)
 ├── include/
-│   └── config.h            # Wi-Fi, backend URL, pinos, intervalos
+│   └── config.h        # Pinos, intervalos, parâmetros
 ├── src/
-│   └── main.cpp            # Firmware principal
-├── diagram.json            # Circuito Wokwi
-├── wokwi.toml              # Config simulador Wokwi
+│   └── main.cpp        # Firmware principal
+├── diagram.json        # Circuito Wokwi
+├── wokwi.toml          # Config simulador Wokwi
 └── README.md
 ```
 
-## Referência
+---
 
-- **Backend (Atividade 1):** [backend-queue-rabbitmq](https://github.com/julia-lika/backend-queue-rabbitmq) — Clojure + RabbitMQ + Datomic + Pedestal
+## Funcionalidades implementadas
+
+- **Leitura analógica** com média móvel de 10 amostras (suavização de ruído)
+- **Leitura digital** com debouncing por software (50 ms)
+- Saída via **serial USB** a 115200 baud
