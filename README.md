@@ -1,6 +1,6 @@
 # Pico Telemetry Firmware
 
-Firmware embarcado para **Raspberry Pi Pico (RP2040)** que lê sensores analógicos e digitais e imprime os dados via serial USB.
+Firmware embarcado para **Raspberry Pi Pico (RP2040)** que lê sensores analógicos e digitais e imprime os dados via serial USB. Posteriormente, os dados serão processados em [backend-queue-rabbitmq](https://github.com/julia-lika/backend-queue-rabbitmq)
 
 ## Framework / Toolchain
 
@@ -22,9 +22,9 @@ Firmware embarcado para **Raspberry Pi Pico (RP2040)** que lê sensores analógi
 
 | Pino do pot | Pino físico do Pico | Função |
 |---|---|---|
-| Terminal esquerdo (VCC) | Pino 37 — 3V3 OUT | Alimentação 3.3V |
-| Terminal do meio (wiper) | Pino 34 — GP28 / ADC2 | Sinal analógico |
-| Terminal direito (GND) | Pino 33 — AGND | Terra analógico |
+| Terminal esquerdo (VCC) | Pino 37 - 3V3 OUT | Alimentação 3.3V |
+| Terminal do meio (wiper) | Pino 34 - GP28 / ADC2 | Sinal analógico |
+| Terminal direito (GND) | Pino 33 - AGND | Terra analógico |
 
 > **Atenção:** O ADC do Pico suporta no máximo **3.3V**. Nunca conecte 5V ao pino de sinal.
 
@@ -32,10 +32,10 @@ Firmware embarcado para **Raspberry Pi Pico (RP2040)** que lê sensores analógi
 
 | Pino do botão | Pino físico do Pico |
 |---|---|
-| Terminal 1 | Pino 20 — GP15 |
+| Terminal 1 | Pino 20 - GP15 |
 | Terminal 2 | Qualquer GND |
 
-O pino usa `INPUT_PULLUP` — lê `LOW` quando pressionado.
+O pino usa `INPUT_PULLUP` - lê `LOW` quando pressionado.
 
 ---
 
@@ -73,7 +73,7 @@ O firmware compilado fica em `.pio/build/rpipico/firmware.uf2`.
 
 1. **Segure o botão BOOTSEL** no Pico
 2. **Conecte o cabo USB** ao computador enquanto segura
-3. Solte o BOOTSEL — o Pico monta como drive `RPI-RP2`
+3. Solte o BOOTSEL - o Pico monta como drive `RPI-RP2`
 4. Copie o firmware:
    ```bash
    cp .pio/build/rpipicow/firmware.uf2 /media/$USER/RPI-RP2/
