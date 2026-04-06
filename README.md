@@ -18,23 +18,6 @@ Firmware embarcado para **Raspberry Pi Pico (RP2040)** que lê sensores analógi
 
 ---
 
-## Diagrama de conexão
-
-```
-                    Raspberry Pi Pico
-                   ┌──────────────────────┐
-                   │                      │
-  [Botão] ────────│ GP15 (pino 20)       │
-           GND ───│ GND  (pino 18)       │
-                   │                      │
-  [Pot] WIPER ────│ GP28 / ADC2 (pino 34)│
-        VCC ──────│ 3V3 OUT     (pino 37)│
-        GND ──────│ AGND        (pino 33)│
-                   │                      │
-                   │ GP25 (LED built-in)  │──── [LED indicador]
-                   └──────────────────────┘
-```
-
 ### Pinagem do potenciômetro
 
 | Pino do pot | Pino físico do Pico | Função |
@@ -93,7 +76,7 @@ O firmware compilado fica em `.pio/build/rpipico/firmware.uf2`.
 3. Solte o BOOTSEL — o Pico monta como drive `RPI-RP2`
 4. Copie o firmware:
    ```bash
-   cp .pio/build/rpipico/firmware.uf2 /media/$USER/RPI-RP2/
+   cp .pio/build/rpipicow/firmware.uf2 /media/$USER/RPI-RP2/
    ```
 5. O Pico reinicia automaticamente e começa a executar
 
@@ -126,24 +109,16 @@ Saída esperada:
 
 ---
 
-## Estrutura do projeto
-
-```
-pico-w-telemetry/
-├── platformio.ini      # Configuração PlatformIO (board: rpipico)
-├── include/
-│   └── config.h        # Pinos, intervalos, parâmetros
-├── src/
-│   └── main.cpp        # Firmware principal
-├── diagram.json        # Circuito Wokwi
-├── wokwi.toml          # Config simulador Wokwi
-└── README.md
-```
-
----
-
-## Funcionalidades implementadas
-
-- **Leitura analógica** com média móvel de 10 amostras (suavização de ruído)
-- **Leitura digital** com debouncing por software (50 ms)
-- Saída via **serial USB** a 115200 baud
+## Fotos
+<div align="center">
+  <img src="img/pico-w-telemetry.jpeg">
+  <p>Sensores sendo lidos no pico-w-telemetry</p>
+</div>
+<div align="center">
+  <img src="img/backend-queue-rabbitmq.jpeg">
+  <p>Backend recebendo leitura dos sensores</p>
+</div>
+<div align="center">
+  <img src="img/rabbitmq.jpeg">
+  <p>RabbitMQ mostrando as requisições</p>
+</div>
